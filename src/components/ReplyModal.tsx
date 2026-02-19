@@ -5,7 +5,7 @@ import type { Short } from '../types';
 import { TIER_LIMITS } from '../types';
 import styles from './ReplyModal.module.css';
 
-const MAX_DURATION = 7;
+const MAX_DURATION = 5;
 
 interface ReplyModalProps {
   parentShort: Short;
@@ -191,7 +191,7 @@ export function ReplyModal({ parentShort, onClose, onRecorded }: ReplyModalProps
                 className={styles.recordBtn}
                 onClick={handleStartRecord}
               >
-                Start 7s recording
+                Start 5s recording
               </button>
             ) : (
               <div className={styles.recording}>

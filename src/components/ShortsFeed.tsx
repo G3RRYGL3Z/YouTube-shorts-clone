@@ -14,6 +14,7 @@ export function ShortsFeed() {
   const [replyForShort, setReplyForShort] = useState<Short | null>(null);
   const [muted, setMuted] = useState(false);
   const [recordedReplyUrl, setRecordedReplyUrl] = useState<string | null>(null);
+  const [replyPreviewMuted, setReplyPreviewMuted] = useState(false);
   const touchStartY = useRef<number | null>(null);
   const navCooldownUntil = useRef(0);
   const feedIds = getFeedShortIds();
@@ -86,6 +87,10 @@ export function ShortsFeed() {
       setRecordedReplyUrl(null);
     }
   }, [recordedReplyUrl]);
+
+  const toggleReplyPreviewMute = useCallback(() => {
+    setReplyPreviewMuted((m) => !m);
+  }, []);
 
   return (
     <div
@@ -161,17 +166,25 @@ export function ShortsFeed() {
         />
       )}
 
-      {/* Small playback of your 7s reply at bottom of phone frame */}
+      {/* Small playback of your 5s reply at bottom of phone frame */}
       {recordedReplyUrl && (
         <div className={styles.replyPreview}>
           <video
             src={recordedReplyUrl}
             autoPlay
             loop
-            muted={false}
+            muted={replyPreviewMuted}
             playsInline
             className={styles.replyPreviewVideo}
           />
+          <button
+            type="button"
+            className={styles.replyPreviewMute}
+            onClick={toggleReplyPreviewMute}
+            aria-label={replyPreviewMuted ? 'Unmute reply' : 'Mute reply'}
+          >
+            {replyPreviewMuted ? '🔇' : '🔊'}
+          </button>
           <button
             type="button"
             className={styles.replyPreviewClose}
