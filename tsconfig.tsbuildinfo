@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/types.ts","./src/vite-env.d.ts","./src/components/replymodal.tsx","./src/components/shortsfeed.tsx","./src/components/shortsplayer.tsx","./src/components/tierbar.tsx","./src/context/tiercontext.tsx","./src/data/mockshorts.ts"],"version":"5.9.3"}

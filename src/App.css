@@ -1,0 +1,36 @@
+.app {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #0d0d0f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.app * {
+  box-sizing: border-box;
+}
+
+/* Phone-sized Shorts viewport (width fixed, extra height for vertical) */
+.phone-frame {
+  flex-shrink: 0;
+  width: 300px;
+  height: 640px;
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  border: 3px solid #16161a;
+  background: #0f0f0f;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+@media (max-width: 768px) {
+  .phone-frame {
+    width: 240px;
+    height: 512px;
+  }
+}

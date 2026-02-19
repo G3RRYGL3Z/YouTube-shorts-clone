@@ -1,0 +1,161 @@
+.wrapper {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: #0f0f0f;
+}
+
+.videoContainer {
+  position: absolute;
+  inset: 0;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  overflow: hidden;
+}
+
+.videoContainer.active {
+  opacity: 1;
+}
+
+/* Fit width (horizontal unchanged); double vertical size */
+.video {
+  width: 100%;
+  height: auto;
+  min-height: 100%;
+  max-height: none;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  vertical-align: middle;
+  transform: scaleY(2);
+  transform-origin: center center;
+}
+
+.placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.placeholderLabel {
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.8;
+}
+
+.placeholderTitle {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 0 0.5rem;
+  max-width: 92%;
+}
+
+.placeholderDuration {
+  font-size: 0.55rem;
+  opacity: 0.7;
+}
+
+/* Right actions (sized for phone frame) */
+.actions {
+  position: absolute;
+  right: 0.25rem;
+  bottom: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  z-index: 2;
+}
+
+.avatarWrap {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  margin-bottom: 0.25rem;
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.actionBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+  padding: 0.15rem 0;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.5rem;
+}
+
+.actionBtn:active {
+  opacity: 0.8;
+}
+
+.actionIcon {
+  font-size: 1rem;
+}
+
+.actionCount {
+  font-size: 0.45rem;
+  opacity: 0.95;
+}
+
+.actionLabel {
+  font-size: 0.4rem;
+  opacity: 0.8;
+}
+
+/* Bottom info */
+.bottom {
+  position: relative;
+  z-index: 2;
+  padding: 0.4rem 0.4rem 0.6rem 2.25rem;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7) 30%);
+}
+
+.creatorRow {
+  margin-bottom: 0.1rem;
+}
+
+.handle {
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.title {
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.95);
+  margin: 0 0 0.1rem 0;
+  line-height: 1.25;
+}
+
+.music {
+  font-size: 0.5rem;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0;
+}

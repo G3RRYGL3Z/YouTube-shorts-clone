@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Why YouTube Shorts? — UX & Business Decisions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=Outfit:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    :root {
+      --bg: #0d0d0f;
+      --surface: #16161a;
+      --text: #e8e6ed;
+      --muted: #8b8798;
+      --accent: #ff3366;
+      --accent-soft: rgba(255, 51, 102, 0.15);
+      --green: #00c853;
+      --green-soft: rgba(0, 200, 83, 0.12);
+    }
+    html {
+      scroll-snap-type: y mandatory;
+      scroll-behavior: smooth;
+    }
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+    .slide {
+      min-height: 100vh;
+      padding: 4rem 5rem 5.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      scroll-snap-align: start;
+      position: relative;
+    }
+    .slide::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 100%;
+      background: 
+        radial-gradient(ellipse 80% 50% at 50% -20%, var(--accent-soft), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 80%, var(--green-soft), transparent);
+      pointer-events: none;
+    }
+    .slide > * {
+      position: relative;
+      z-index: 1;
+    }
+    h1, h2 {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+    .slide h1 {
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #fff 0%, var(--muted) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .slide .subtitle {
+      font-size: 1.25rem;
+      color: var(--muted);
+      font-weight: 400;
+      margin-bottom: 1.5rem;
+    }
+    .slide h2 {
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      color: var(--text);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .slide h2 .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    ul {
+      list-style: none;
+      max-width: 38rem;
+    }
+    li {
+      padding: 0.65rem 0;
+      padding-left: 1.5rem;
+      position: relative;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+    li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 1rem;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0.8;
+    }
+    li strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+    .two-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      max-width: 52rem;
+      margin-top: 0.5rem;
+    }
+    .two-cols h2 .dot { background: var(--green); }
+    .takeaway {
+      margin-top: 2rem;
+      padding: 1.5rem 1.75rem;
+      background: var(--surface);
+      border-radius: 16px;
+      border-left: 4px solid var(--accent);
+      font-size: 1.05rem;
+      color: var(--muted);
+      max-width: 40rem;
+    }
+    .takeaway strong { color: var(--text); }
+
+    /* Shorts-style visuals */
+    .slide-hero-wrap {
+      display: flex;
+      align-items: center;
+      gap: 3rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+    .shorts-mockup {
+      flex-shrink: 0;
+      width: 220px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 24px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06);
+      border: 3px solid var(--surface);
+    }
+    .shorts-mockup img {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 9 / 16;
+      object-fit: cover;
+    }
+    .slide-hero-wrap .intro-text {
+      color: var(--muted);
+      font-size: 1.1rem;
+      max-width: 28rem;
+    }
+    .shorts-strip {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+      flex-wrap: wrap;
+    }
+    .shorts-thumb {
+      width: 100px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      border: 2px solid var(--surface);
+    }
+    .shorts-thumb img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 9 / 16;
+      object-fit: cover;
+    }
+
+    /* Nav: Prev / Next */
+    .slide-nav {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.5rem 1rem;
+      background: rgba(22, 22, 26, 0.9);
+      backdrop-filter: blur(12px);
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    .slide-nav button {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .slide-nav button:hover:not(:disabled) {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+    .slide-nav button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .slide-nav .counter {
+      font-size: 0.85rem;
+      color: var(--muted);
+      min-width: 3rem;
+      text-align: center;
+    }
+    .slide-number {
+      position: absolute;
+      bottom: 2rem;
+      right: 3rem;
+      font-size: 0.875rem;
+      color: var(--muted);
+      opacity: 0.6;
+    }
+    @media (max-width: 768px) {
+      .slide { padding: 3rem 2rem 5rem; }
+      .two-cols { grid-template-columns: 1fr; }
+      .slide-hero-wrap { flex-direction: column; align-items: flex-start; }
+      .shorts-mockup { width: 160px; }
+      .shorts-thumb { width: 72px; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="slide-nav" aria-label="Slide navigation">
+    <button type="button" id="btn-prev" aria-label="Previous slide">← Previous</button>
+    <span class="counter" id="slide-counter">1 / 4</span>
+    <button type="button" id="btn-next" aria-label="Next slide">Next →</button>
+  </nav>
+
+  <section class="slide" id="slide-1">
+    <h1>Why YouTube Shorts?</h1>
+    <p class="subtitle">UX & business decisions behind short-form vertical video</p>
+    <div class="slide-hero-wrap">
+      <div class="shorts-mockup">
+        <img src="https://picsum.photos/400/712?random=1" alt="Short-form vertical video style" />
+      </div>
+      <p class="intro-text">
+        Understanding the product thinking that shaped a format now central to modern video platforms.
+      </p>
+    </div>
+    <span class="slide-number">1</span>
+  </section>
+
+  <section class="slide" id="slide-2">
+    <h2><span class="dot"></span>Business decisions</h2>
+    <ul>
+      <li><strong>Compete with TikTok & Reels</strong> — Capture younger users and watch time in short-form.</li>
+      <li><strong>New revenue stream</strong> — Shorts ads (in-feed) add another monetization layer.</li>
+      <li><strong>Keep creators on YouTube</strong> — Give short-form creators a home instead of losing them to other apps.</li>
+      <li><strong>Funnel to long-form</strong> — Shorts tease full videos and drive subscriptions and watch time.</li>
+      <li><strong>Habit & retention</strong> — Quick, low-commitment clips encourage daily opens and more time on platform.</li>
+    </ul>
+    <span class="slide-number">2</span>
+  </section>
+
+  <section class="slide" id="slide-3">
+    <h2><span class="dot"></span>UX decisions</h2>
+    <div class="shorts-strip">
+      <div class="shorts-thumb"><img src="https://picsum.photos/200/356?random=2" alt="" /></div>
+      <div class="shorts-thumb"><img src="https://picsum.photos/200/356?random=3" alt="" /></div>
+      <div class="shorts-thumb"><img src="https://picsum.photos/200/356?random=4" alt="" /></div>
+    </div>
+    <div class="two-cols">
+      <ul>
+        <li><strong>Full-screen vertical</strong> — One video at a time; matches how people hold the phone.</li>
+        <li><strong>Swipe for next</strong> — Infinite scroll, minimal friction, easy to binge.</li>
+        <li><strong>Short length (≤60s)</strong> — Low commitment; algorithm learns preferences fast.</li>
+        <li><strong>Sound on by default</strong> — Design assumes audio is part of the experience.</li>
+      </ul>
+      <ul>
+        <li><strong>Minimal overlay UI</strong> — Like, comment, share without leaving the video.</li>
+        <li><strong>Dedicated Shorts tab</strong> — Clear separation from the main subscription feed.</li>
+        <li><strong>Algorithmic feed</strong> — Personalized order to maximize retention.</li>
+        <li><strong>Link to channel / long-form</strong> — Shorts as a funnel to subscriptions and longer content.</li>
+      </ul>
+    </div>
+    <span class="slide-number">3</span>
+  </section>
+
+  <section class="slide" id="slide-4">
+    <h2><span class="dot"></span>Takeaway</h2>
+    <div class="takeaway">
+      <strong>UX and business are aligned:</strong> each design choice (vertical, swipe, length, feed, links) supports engagement, retention, and revenue while competing with other short-form apps. Isolate one part of the experience, explain the UX rationale, then tie it to the business goal.
+    </div>
+    <p style="color: var(--muted); margin-top: 2rem; font-size: 1rem;">
+      For your assignment: pick one isolated piece (e.g. swipe, 60s limit, or dedicated tab), describe the UX, then connect it to the business outcome.
+    </p>
+    <span class="slide-number">4</span>
+  </section>
+
+  <script>
+    (function() {
+      var slides = document.querySelectorAll('.slide');
+      var btnPrev = document.getElementById('btn-prev');
+      var btnNext = document.getElementById('btn-next');
+      var counter = document.getElementById('slide-counter');
+      var total = slides.length;
+      var current = 0;
+
+      function updateUI() {
+        counter.textContent = (current + 1) + ' / ' + total;
+        btnPrev.disabled = current === 0;
+        btnNext.disabled = current === total - 1;
+      }
+
+      function goTo(i) {
+        current = Math.max(0, Math.min(i, total - 1));
+        slides[current].scrollIntoView({ behavior: 'smooth', block: 'start' });
+        updateUI();
+      }
+
+      btnPrev.addEventListener('click', function() { goTo(current - 1); });
+      btnNext.addEventListener('click', function() { goTo(current + 1); });
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowRight' || e.key === ' ') {
+          e.preventDefault();
+          goTo(current + 1);
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          goTo(current - 1);
+        }
+      });
+
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (!entry.isIntersecting) return;
+          var id = entry.target.id;
+          if (id && id.startsWith('slide-')) {
+            current = parseInt(id.replace('slide-', ''), 10) - 1;
+            updateUI();
+          }
+        });
+      }, { threshold: 0.5 });
+
+      slides.forEach(function(s) { observer.observe(s); });
+      updateUI();
+    })();
+  </script>
+</body>
+</html>
