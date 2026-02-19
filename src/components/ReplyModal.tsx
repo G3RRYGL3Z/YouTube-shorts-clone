@@ -22,6 +22,7 @@ export function ReplyModal({ parentShort, onClose, onRecorded }: ReplyModalProps
   const [recording, setRecording] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const previewVideoRef = useRef<HTMLVideoElement | null>(null);
   const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -59,6 +60,10 @@ export function ReplyModal({ parentShort, onClose, onRecorded }: ReplyModalProps
         audio: true,
       });
       streamRef.current = stream;
+      if (previewVideoRef.current) {
+        previewVideoRef.current.srcObject = stream;
+        previewVideoRef.current.play().catch(() => {});
+      }
 
       const chunks: Blob[] = [];
       let mimeType = 'video/webm';
@@ -190,8 +195,18 @@ export function ReplyModal({ parentShort, onClose, onRecorded }: ReplyModalProps
               </button>
             ) : (
               <div className={styles.recording}>
-                <div className={styles.timer}>{countdown}s</div>
-                <p className={styles.recordingLabel}>Recording…</p>
+                <video
+                  ref={previewVideoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className={styles.recordingPreview}
+                  aria-label="Live camera preview"
+                />
+                <div className={styles.recordingOverlay}>
+                  <div className={styles.timer}>{countdown}s</div>
+                  <p className={styles.recordingLabel}>Recording…</p>
+                </div>
               </div>
             )}
           </div>

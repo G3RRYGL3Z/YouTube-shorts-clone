@@ -197,22 +197,40 @@
 }
 
 .recording {
-  text-align: center;
-  padding: 2rem;
-  background: rgba(0, 0, 0, 0.3);
+  position: relative;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: #000;
+}
+
+.recordingPreview {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
   border-radius: 0.5rem;
 }
 
+.recordingOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.75rem;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+  text-align: center;
+}
+
 .timer {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 700;
   color: #3ea6ff;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .recordingLabel {
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.9);
   margin: 0;
 }
 
