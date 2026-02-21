@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube Shorts Clone: The 5-Second Video Reply</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=Outfit:wght@600;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0d0d0f;
+      --surface: #16161a;
+      --text: #e8e6ed;
+      --muted: #8b8798;
+      --accent: #ff3366;
+      --accent-soft: rgba(255, 51, 102, 0.15);
+      --green: #00c853;
+      --green-soft: rgba(0, 200, 83, 0.12);
+      --slide-duration: 24s; /* 24s × 5 slides = 120s = 2 min */
+    }
+
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    h1, h2, h3 {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+
+    /* ─── GLOBAL PROGRESS BAR ─── */
+    .global-progress {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      z-index: 200;
+      background: rgba(255,255,255,0.06);
+    }
+    .global-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), #ff6699);
+      transition: width 0.3s linear;
+    }
+
+    /* ─── TIMER ─── */
+    .timer {
+      position: fixed;
+      top: 16px; right: 24px;
+      z-index: 200;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      background: rgba(22,22,26,0.85);
+      backdrop-filter: blur(10px);
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* ─── SLIDE CONTAINER ─── */
+    .deck {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: 5rem 6rem 6rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      opacity: 0;
+      transform: translateY(30px) scale(0.98);
+      pointer-events: none;
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .slide::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, var(--accent-soft), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 80%, var(--green-soft), transparent);
+      pointer-events: none;
+    }
+    .slide > * { position: relative; z-index: 1; }
+    .slide.active {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .slide h1 {
+      font-size: clamp(2.8rem, 5vw, 4.2rem);
+      margin-bottom: 0.4rem;
+      background: linear-gradient(135deg, #fff 0%, var(--muted) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .slide .subtitle {
+      font-size: 1.3rem;
+      color: var(--muted);
+      font-weight: 400;
+      margin-bottom: 1.5rem;
+    }
+
+    .slide h2 {
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      color: var(--text);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .slide h2 .dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* ─── LIST ITEMS with stagger animation ─── */
+    ul { list-style: none; max-width: 40rem; }
+    li {
+      padding: 0.6rem 0 0.6rem 1.5rem;
+      position: relative;
+      color: var(--muted);
+      font-size: 1.05rem;
+      opacity: 0;
+      transform: translateX(-12px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .slide.active li { opacity: 1; transform: translateX(0); }
+    .slide.active li:nth-child(1) { transition-delay: 0.3s; }
+    .slide.active li:nth-child(2) { transition-delay: 0.55s; }
+    .slide.active li:nth-child(3) { transition-delay: 0.8s; }
+    .slide.active li:nth-child(4) { transition-delay: 1.05s; }
+    .slide.active li:nth-child(5) { transition-delay: 1.3s; }
+    .slide.active li:nth-child(6) { transition-delay: 1.55s; }
+    .slide.active li:nth-child(7) { transition-delay: 1.8s; }
+    .slide.active li:nth-child(8) { transition-delay: 2.05s; }
+
+    li::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0.95rem;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0.8;
+    }
+    li strong { color: var(--text); font-weight: 600; }
+
+    /* ─── TWO COLUMN LAYOUT ─── */
+    .two-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      max-width: 56rem;
+      margin-top: 0.5rem;
+    }
+    .two-cols h3 {
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+    }
+
+    /* ─── HERO WRAP ─── */
+    .slide-hero-wrap {
+      display: flex;
+      align-items: center;
+      gap: 3rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+    .shorts-mockup {
+      flex-shrink: 0;
+      width: 200px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 24px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06);
+      border: 3px solid var(--surface);
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .shorts-mockup img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 9 / 16;
+      object-fit: cover;
+    }
+    .intro-text {
+      color: var(--muted);
+      font-size: 1.15rem;
+      max-width: 28rem;
+      line-height: 1.65;
+    }
+    .intro-text em { font-style: italic; }
+
+    /* ─── APP MOCKUPS ─── */
+    .mockup-row {
+      display: flex;
+      gap: 2rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+    .mockup-frame {
+      width: 160px;
+      flex-shrink: 0;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
+      border: 2px solid var(--surface);
+      background: #0f0f0f;
+    }
+    .mockup-frame svg { display: block; width: 100%; height: auto; }
+    .mockup-caption {
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.5rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+    .mockup-group { display: flex; flex-direction: column; align-items: center; }
+    .mockup-row-lg { gap: 2.5rem; }
+    .mockup-frame-lg {
+      width: 180px;
+    }
+    .mockup-annotate {
+      font-size: 0.85rem;
+      color: var(--muted);
+      max-width: 16rem;
+      line-height: 1.55;
+      align-self: center;
+    }
+    .mockup-annotate strong { color: var(--text); }
+    .arrow-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.5rem;
+      color: var(--accent);
+      align-self: center;
+    }
+
+    /* ─── TAKEAWAY BOX ─── */
+    .takeaway {
+      margin-top: 1.5rem;
+      padding: 1.75rem 2rem;
+      background: var(--surface);
+      border-radius: 16px;
+      border-left: 4px solid var(--accent);
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 44rem;
+      line-height: 1.7;
+    }
+    .takeaway strong { color: var(--text); }
+
+    /* ─── SLIDE PROGRESS (per-slide timer bar) ─── */
+    .slide-progress {
+      position: absolute;
+      bottom: 0; left: 0;
+      height: 3px;
+      background: var(--accent);
+      opacity: 0.5;
+      width: 0%;
+    }
+    .slide.active .slide-progress {
+      animation: slideTimer var(--slide-duration) linear forwards;
+    }
+    @keyframes slideTimer {
+      from { width: 0%; }
+      to   { width: 100%; }
+    }
+
+    /* ─── NARRATION / SPEAKER NOTES (hidden) ─── */
+    .narration {
+      display: none;
+    }
+
+    /* ─── SLIDE INDICATOR DOTS ─── */
+    .indicators {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .indicators .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      cursor: pointer;
+      transition: background 0.3s, transform 0.3s;
+    }
+    .indicators .dot.active {
+      background: var(--accent);
+      transform: scale(1.3);
+    }
+
+    /* ─── PLAY/PAUSE ─── */
+    .controls {
+      position: fixed;
+      top: 16px; left: 24px;
+      z-index: 200;
+      display: flex; gap: 8px;
+    }
+    .controls button {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+      background: rgba(22,22,26,0.85);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 6px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .controls button:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 768px) {
+      .slide { padding: 3rem 2rem 5rem; }
+      .two-cols { grid-template-columns: 1fr; }
+      .slide-hero-wrap { flex-direction: column; align-items: flex-start; }
+      .shorts-mockup { width: 140px; }
+      .narration { left: 2rem; right: 2rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- GLOBAL PROGRESS -->
+  <div class="global-progress">
+    <div class="global-progress-bar" id="global-bar"></div>
+  </div>
+
+  <!-- TIMER -->
+  <div class="timer" id="timer">2:00</div>
+
+  <!-- CONTROLS -->
+  <div class="controls">
+    <button id="btn-play" title="Play / Pause">⏸ Pause</button>
+    <button id="btn-restart" title="Restart">↻ Restart</button>
+  </div>
+
+  <!-- INDICATORS -->
+  <div class="indicators" id="indicators">
+    <div class="dot active" data-slide="0"></div>
+    <div class="dot" data-slide="1"></div>
+    <div class="dot" data-slide="2"></div>
+    <div class="dot" data-slide="3"></div>
+    <div class="dot" data-slide="4"></div>
+  </div>
+
+  <!-- ─────── SLIDES ─────── -->
+  <div class="deck" id="deck">
+
+    <!-- SLIDE 1 — Title & Problem (0:00–0:24) -->
+    <section class="slide active" data-index="0">
+      <h1>YouTube Shorts Clone</h1>
+      <p class="subtitle">The 5-Second Video Reply</p>
+      <div class="slide-hero-wrap">
+        <!-- Phone mockup: Shorts player with Reply button -->
+        <div class="mockup-group">
+          <div class="mockup-frame" style="width:200px;">
+            <svg viewBox="0 0 300 640" xmlns="http://www.w3.org/2000/svg">
+              <!-- Background video gradient -->
+              <defs>
+                <linearGradient id="vidGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#1a1040"/>
+                  <stop offset="100%" stop-color="#0a2030"/>
+                </linearGradient>
+                <linearGradient id="tierGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#1a1a2e"/>
+                  <stop offset="100%" stop-color="#16213e"/>
+                </linearGradient>
+              </defs>
+              <rect width="300" height="640" fill="url(#vidGrad)"/>
+              <!-- Tier bar -->
+              <rect y="0" width="300" height="32" fill="url(#tierGrad)" opacity="0.9"/>
+              <text x="12" y="21" fill="#ff3366" font-size="9" font-weight="700" font-family="sans-serif">Free Tier</text>
+              <text x="200" y="21" fill="#888" font-size="8" font-family="sans-serif">3 reply credits</text>
+              <!-- Video content area -->
+              <rect x="60" y="200" width="180" height="120" rx="8" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+              <polygon points="135,245 135,285 170,265" fill="rgba(255,255,255,0.3)"/>
+              <!-- Right action bar -->
+              <circle cx="270" cy="340" r="16" fill="rgba(255,255,255,0.08)"/>
+              <text x="270" y="344" text-anchor="middle" fill="#fff" font-size="14">🔊</text>
+              <text x="270" y="360" text-anchor="middle" fill="#aaa" font-size="7" font-family="sans-serif">On</text>
+              <circle cx="270" cy="390" r="16" fill="rgba(255,255,255,0.08)"/>
+              <text x="270" y="394" text-anchor="middle" fill="#fff" font-size="14">🤍</text>
+              <text x="270" y="410" text-anchor="middle" fill="#aaa" font-size="7" font-family="sans-serif">1.2K</text>
+              <circle cx="270" cy="440" r="16" fill="rgba(255,255,255,0.08)"/>
+              <text x="270" y="444" text-anchor="middle" fill="#fff" font-size="14">💬</text>
+              <text x="270" y="460" text-anchor="middle" fill="#aaa" font-size="7" font-family="sans-serif">89</text>
+              <!-- REPLY BUTTON (highlighted) -->
+              <circle cx="270" cy="496" r="18" fill="rgba(255,51,102,0.25)" stroke="#ff3366" stroke-width="2"/>
+              <text x="270" y="500" text-anchor="middle" fill="#fff" font-size="14">🎬</text>
+              <text x="270" y="516" text-anchor="middle" fill="#ff3366" font-size="7" font-weight="700" font-family="sans-serif">Reply</text>
+              <!-- Pulse ring around Reply -->
+              <circle cx="270" cy="496" r="24" fill="none" stroke="#ff3366" stroke-width="1" opacity="0.4">
+                <animate attributeName="r" values="18;28;18" dur="2s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.6;0;0.6" dur="2s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="270" cy="548" r="16" fill="rgba(255,255,255,0.08)"/>
+              <text x="270" y="552" text-anchor="middle" fill="#fff" font-size="14">↗️</text>
+              <text x="270" y="568" text-anchor="middle" fill="#aaa" font-size="7" font-family="sans-serif">Share</text>
+              <!-- Bottom info -->
+              <text x="12" y="580" fill="#fff" font-size="10" font-weight="700" font-family="sans-serif">@creator_name</text>
+              <text x="12" y="596" fill="rgba(255,255,255,0.7)" font-size="9" font-family="sans-serif">My awesome Short title 🔥</text>
+              <text x="12" y="612" fill="rgba(255,255,255,0.5)" font-size="8" font-family="sans-serif">♫ Original Sound</text>
+              <!-- Navigation dots -->
+              <circle cx="140" cy="630" r="3" fill="rgba(255,255,255,0.6)"/>
+              <circle cx="150" cy="630" r="3" fill="rgba(255,255,255,0.2)"/>
+              <circle cx="160" cy="630" r="3" fill="rgba(255,255,255,0.2)"/>
+            </svg>
+          </div>
+          <span class="mockup-caption">Shorts Player — Reply button</span>
+        </div>
+        <div>
+          <p class="intro-text" style="margin-bottom: 1.25rem;">
+            <strong style="color: var(--accent);">The Problem:</strong> Traditional comment sections are <em>text-only</em> and break the immersion of a video-first platform.
+          </p>
+          <p class="intro-text">
+            <strong style="color: var(--green);">The Vision:</strong> We created a feature where users respond to video <em>with</em> video — keeping the conversation as dynamic as the content.
+          </p>
+        </div>
+      </div>
+      <div class="narration">
+        🎙 <em>Script:</em> "Think about comment sections — they're all text. On a platform built for video, that feels disconnected.
+        So we built a feature where users reply to Shorts with their own 5-second videos, keeping the entire experience visual and immersive."
+      </div>
+      <div class="slide-progress"></div>
+    </section>
+
+    <!-- SLIDE 2 — The Feature Design (0:24–0:48) -->
+    <section class="slide" data-index="1">
+      <h2><span class="dot"></span>Feature Design</h2>
+      <div style="display:flex; gap:3rem; flex-wrap:wrap; align-items:flex-start;">
+        <ul>
+          <li><strong>The 5-Second Constraint</strong> — A strict 5-second limit ensures replies are punchy, easy to record, and lightning-fast to watch.</li>
+          <li><strong>Seamless UI</strong> — Users tap a "Video Reply" button, record instantly, and the reply is automatically nested under the original Short.</li>
+          <li><strong>Visual Engagement</strong> — It turns a passive audience into active creators.</li>
+        </ul>
+        <!-- Flow: Tap Reply → Modal → Success -->
+        <div class="mockup-row mockup-row-lg" style="margin-top:0;">
+          <div class="mockup-group">
+            <div class="mockup-frame" style="width:130px;">
+              <svg viewBox="0 0 300 640" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="vg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1a1040"/><stop offset="100%" stop-color="#0a2030"/></linearGradient>
+                </defs>
+                <rect width="300" height="640" fill="url(#vg2)"/>
+                <rect y="0" width="300" height="32" fill="#1a1a2e" opacity="0.9"/>
+                <text x="12" y="21" fill="#ff3366" font-size="9" font-weight="700" font-family="sans-serif">Free Tier</text>
+                <!-- Finger tap indicator on Reply -->
+                <circle cx="270" cy="496" r="18" fill="rgba(255,51,102,0.3)" stroke="#ff3366" stroke-width="2"/>
+                <text x="270" y="500" text-anchor="middle" fill="#fff" font-size="14">🎬</text>
+                <text x="270" y="516" text-anchor="middle" fill="#ff3366" font-size="7" font-weight="700" font-family="sans-serif">Reply</text>
+                <!-- Tap ripple -->
+                <circle cx="270" cy="496" r="30" fill="none" stroke="#ff3366" stroke-width="2" opacity="0.5">
+                  <animate attributeName="r" values="18;40" dur="1s" repeatCount="indefinite"/>
+                  <animate attributeName="opacity" values="0.6;0" dur="1s" repeatCount="indefinite"/>
+                </circle>
+                <!-- Bottom info -->
+                <text x="12" y="580" fill="#fff" font-size="10" font-weight="700" font-family="sans-serif">@creator_name</text>
+                <text x="12" y="596" fill="rgba(255,255,255,0.6)" font-size="9" font-family="sans-serif">Tap 🎬 to reply…</text>
+              </svg>
+            </div>
+            <span class="mockup-caption">① Tap Reply</span>
+          </div>
+          <span class="arrow-label">→</span>
+          <div class="mockup-group">
+            <div class="mockup-frame" style="width:130px;">
+              <svg viewBox="0 0 300 640" xmlns="http://www.w3.org/2000/svg">
+                <!-- Modal overlay -->
+                <rect width="300" height="640" fill="#000" opacity="0.75"/>
+                <!-- Modal panel -->
+                <rect x="20" y="140" width="260" height="360" rx="16" fill="#1a1a1a"/>
+                <!-- Close button -->
+                <circle cx="258" cy="158" r="12" fill="rgba(255,255,255,0.1)"/>
+                <text x="258" y="163" text-anchor="middle" fill="#fff" font-size="14" font-family="sans-serif">×</text>
+                <!-- Heading -->
+                <text x="40" y="185" fill="#fff" font-size="14" font-weight="700" font-family="sans-serif">Reply with a 5s Short</text>
+                <!-- Description -->
+                <text x="40" y="210" fill="rgba(255,255,255,0.7)" font-size="8" font-family="sans-serif">Respond to "My awesome Short"</text>
+                <text x="40" y="222" fill="rgba(255,255,255,0.7)" font-size="8" font-family="sans-serif">with a 5-second video.</text>
+                <!-- Credits -->
+                <text x="40" y="246" fill="#888" font-size="8" font-family="sans-serif">Your credits: 3 left this month</text>
+                <!-- Record button -->
+                <rect x="60" y="270" width="180" height="40" rx="20" fill="#ff3366"/>
+                <text x="150" y="295" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="sans-serif">Start 5s recording</text>
+                <!-- Existing responses -->
+                <text x="40" y="340" fill="rgba(255,255,255,0.5)" font-size="8" font-family="sans-serif">2 responses (5s)</text>
+                <circle cx="52" cy="360" r="8" fill="#333"/>
+                <text x="65" y="363" fill="rgba(255,255,255,0.6)" font-size="7" font-family="sans-serif">@user1 — Nice!</text>
+                <circle cx="52" cy="380" r="8" fill="#333"/>
+                <text x="65" y="383" fill="rgba(255,255,255,0.6)" font-size="7" font-family="sans-serif">@user2 — Love this</text>
+              </svg>
+            </div>
+            <span class="mockup-caption">② Reply Modal</span>
+          </div>
+          <span class="arrow-label">→</span>
+          <div class="mockup-group">
+            <div class="mockup-frame" style="width:130px;">
+              <svg viewBox="0 0 300 640" xmlns="http://www.w3.org/2000/svg">
+                <rect width="300" height="640" fill="#000" opacity="0.75"/>
+                <rect x="20" y="180" width="260" height="280" rx="16" fill="#1a1a1a"/>
+                <circle cx="258" cy="198" r="12" fill="rgba(255,255,255,0.1)"/>
+                <text x="258" y="203" text-anchor="middle" fill="#fff" font-size="14" font-family="sans-serif">×</text>
+                <text x="40" y="225" fill="#fff" font-size="14" font-weight="700" font-family="sans-serif">✓ Reply posted!</text>
+                <text x="40" y="255" fill="rgba(255,255,255,0.7)" font-size="8" font-family="sans-serif">Your 5-second response is live.</text>
+                <text x="40" y="270" fill="rgba(255,255,255,0.7)" font-size="8" font-family="sans-serif">It's linked to the original Short.</text>
+                <text x="40" y="300" fill="rgba(255,255,255,0.4)" font-size="7" font-family="sans-serif">Revenue share applies to response views.</text>
+                <rect x="60" y="330" width="180" height="40" rx="20" fill="#ff3366"/>
+                <text x="150" y="355" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="sans-serif">Done</text>
+                <!-- Checkmark animation -->
+                <circle cx="150" cy="420" r="20" fill="none" stroke="#00c853" stroke-width="2" opacity="0.3">
+                  <animate attributeName="r" values="20;30;20" dur="2s" repeatCount="indefinite"/>
+                  <animate attributeName="opacity" values="0.4;0;0.4" dur="2s" repeatCount="indefinite"/>
+                </circle>
+                <text x="150" y="426" text-anchor="middle" fill="#00c853" font-size="20">✓</text>
+              </svg>
+            </div>
+            <span class="mockup-caption">③ Reply Posted</span>
+          </div>
+        </div>
+      </div>
+      <div class="narration">
+        🎙 <em>Script:</em> "The core idea is simple: limit replies to 5 seconds. That constraint makes recording effortless,
+        watching instant, and the whole flow feels native. Tap the Video Reply button, record, and it nests right under the original Short.
+        Viewers become creators in seconds."
+      </div>
+      <div class="slide-progress"></div>
+    </section>
+
+    <!-- SLIDE 3 — Technical Implementation (0:48–1:12) -->
+    <section class="slide" data-index="2">
+      <h2><span class="dot"></span>Technical Implementation</h2>
+      <div style="display:flex; gap:3rem; flex-wrap:wrap; align-items:flex-start;">
+        <div class="two-cols" style="flex:1;">
+          <div>
+            <h3>Camera Integration</h3>
+            <ul>
+              <li><strong>Device camera access</strong> — Leverages the native device camera for a familiar recording experience.</li>
+              <li><strong>Synchronized countdown</strong> — A 5-second countdown timer keeps recording precise and predictable.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Smart Storage</h3>
+            <ul>
+              <li><strong>Tiny file sizes</strong> — The 5-second duration produces small video files by design.</li>
+              <li><strong>Instant uploading</strong> — Small files mean near-instant upload times.</li>
+              <li><strong>Zero-buffering playback</strong> — Viewers never wait — replies play immediately.</li>
+            </ul>
+          </div>
+        </div>
+        <!-- Recording mockup -->
+        <div class="mockup-group" style="flex-shrink:0;">
+          <div class="mockup-frame" style="width:160px;">
+            <svg viewBox="0 0 300 640" xmlns="http://www.w3.org/2000/svg">
+              <rect width="300" height="640" fill="#000" opacity="0.75"/>
+              <rect x="20" y="120" width="260" height="400" rx="16" fill="#1a1a1a"/>
+              <circle cx="258" cy="138" r="12" fill="rgba(255,255,255,0.1)"/>
+              <text x="258" y="143" text-anchor="middle" fill="#fff" font-size="14" font-family="sans-serif">×</text>
+              <text x="40" y="165" fill="#fff" font-size="14" font-weight="700" font-family="sans-serif">Reply with a 5s Short</text>
+              <!-- Camera preview area -->
+              <rect x="40" y="185" width="220" height="165" rx="12" fill="#111"/>
+              <!-- Camera feed simulation -->
+              <defs>
+                <radialGradient id="camGrad" cx="50%" cy="40%">
+                  <stop offset="0%" stop-color="#2a2040"/>
+                  <stop offset="100%" stop-color="#111"/>
+                </radialGradient>
+              </defs>
+              <rect x="40" y="185" width="220" height="165" rx="12" fill="url(#camGrad)"/>
+              <!-- Face silhouette -->
+              <circle cx="150" cy="250" r="30" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+              <ellipse cx="150" cy="290" rx="25" ry="15" fill="rgba(255,255,255,0.04)"/>
+              <!-- Big countdown number -->
+              <text x="150" y="280" text-anchor="middle" fill="#ff3366" font-size="48" font-weight="900" font-family="sans-serif" opacity="0.9">3</text>
+              <!-- Recording indicator -->
+              <circle cx="55" cy="200" r="5" fill="#ff3366">
+                <animate attributeName="opacity" values="1;0.3;1" dur="1s" repeatCount="indefinite"/>
+              </circle>
+              <text x="66" y="204" fill="#ff3366" font-size="8" font-weight="700" font-family="sans-serif">REC</text>
+              <text x="150" y="320" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="9" font-family="sans-serif">Recording…</text>
+              <!-- Progress bar showing time elapsed -->
+              <rect x="40" y="365" width="220" height="4" rx="2" fill="rgba(255,255,255,0.1)"/>
+              <rect x="40" y="365" width="132" height="4" rx="2" fill="#ff3366">
+                <animate attributeName="width" values="0;220" dur="5s" repeatCount="indefinite"/>
+              </rect>
+              <!-- File size annotation -->
+              <rect x="60" y="390" width="180" height="50" rx="8" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+              <text x="150" y="410" text-anchor="middle" fill="#00c853" font-size="9" font-weight="700" font-family="sans-serif">📦 ~200 KB file</text>
+              <text x="150" y="426" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="7" font-family="sans-serif">Instant upload · Zero buffering</text>
+              <!-- Upload speed bar -->
+              <rect x="85" y="440" width="130" height="3" rx="1.5" fill="rgba(255,255,255,0.1)"/>
+              <rect x="85" y="440" width="130" height="3" rx="1.5" fill="#00c853"/>
+              <text x="150" y="456" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="6" font-family="sans-serif">Upload complete ✓</text>
+            </svg>
+          </div>
+          <span class="mockup-caption">5s Recording + Upload</span>
+        </div>
+      </div>
+      <div class="narration">
+        🎙 <em>Script:</em> "Under the hood, we tap into the device camera with a synchronized 5-second countdown.
+        Because the clips are so short, file sizes stay tiny — that means instant uploads and zero-buffering playback, even on slower connections."
+      </div>
+      <div class="slide-progress"></div>
+    </section>
+
+    <!-- SLIDE 4 — Impact & Benefits (1:12–1:36) -->
+    <section class="slide" data-index="3">
+      <h2><span class="dot"></span>Impact &amp; Benefits</h2>
+      <div style="display:flex; gap:3rem; flex-wrap:wrap; align-items:flex-start;">
+        <ul style="flex:1; min-width:16rem;">
+          <li><strong>High Retention</strong> — Users stay in "video mode" rather than switching to a keyboard.</li>
+          <li><strong>Community Building</strong> — Enables "reaction chains" and micro-vlogs within the comment section.</li>
+          <li><strong>Performance</strong> — Optimized for low-latency playback even on slower connections.</li>
+        </ul>
+        <!-- Reply preview + reaction chain mockup -->
+        <div class="mockup-group" style="flex-shrink:0;">
+          <div class="mockup-frame" style="width:160px;">
+            <svg viewBox="0 0 300 640" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="vg4" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1a1040"/><stop offset="100%" stop-color="#0a2030"/></linearGradient>
+              </defs>
+              <rect width="300" height="640" fill="url(#vg4)"/>
+              <!-- Tier bar -->
+              <rect y="0" width="300" height="32" fill="#1a1a2e" opacity="0.9"/>
+              <text x="12" y="21" fill="#ff3366" font-size="9" font-weight="700" font-family="sans-serif">Plus Tier</text>
+              <text x="180" y="21" fill="#888" font-size="8" font-family="sans-serif">Unlimited replies</text>
+              <!-- Main video area -->
+              <rect x="50" y="120" width="200" height="140" rx="8" fill="rgba(255,255,255,0.04)"/>
+              <polygon points="130,175 130,210 165,192" fill="rgba(255,255,255,0.2)"/>
+              <text x="150" y="240" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="7" font-family="sans-serif">Original Short playing</text>
+              <!-- Action bar -->
+              <circle cx="270" cy="440" r="14" fill="rgba(255,51,102,0.2)" stroke="#ff3366" stroke-width="1.5"/>
+              <text x="270" y="444" text-anchor="middle" fill="#fff" font-size="12">🎬</text>
+              <text x="270" y="460" text-anchor="middle" fill="#ff3366" font-size="6" font-weight="700" font-family="sans-serif">Reply</text>
+              <!-- Bottom info -->
+              <text x="12" y="505" fill="#fff" font-size="10" font-weight="700" font-family="sans-serif">@creator_name</text>
+              <text x="12" y="520" fill="rgba(255,255,255,0.6)" font-size="8" font-family="sans-serif">Check out this cool video!</text>
+              <!-- REPLY PREVIEW (mini video in corner) -->
+              <rect x="10" y="540" width="90" height="70" rx="10" fill="#111" stroke="#ff3366" stroke-width="2"/>
+              <defs>
+                <radialGradient id="replyGrad" cx="50%" cy="50%">
+                  <stop offset="0%" stop-color="#2a1535"/>
+                  <stop offset="100%" stop-color="#111"/>
+                </radialGradient>
+              </defs>
+              <rect x="10" y="540" width="90" height="70" rx="10" fill="url(#replyGrad)"/>
+              <!-- User face in reply -->
+              <circle cx="55" cy="565" r="12" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/>
+              <text x="55" y="590" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="6" font-family="sans-serif">Your reply</text>
+              <!-- Mute/close on reply preview -->
+              <circle cx="84" cy="550" r="7" fill="rgba(0,0,0,0.6)"/>
+              <text x="84" y="553" text-anchor="middle" fill="#fff" font-size="7">🔊</text>
+              <circle cx="84" cy="600" r="7" fill="rgba(0,0,0,0.6)"/>
+              <text x="84" y="603" text-anchor="middle" fill="#fff" font-size="8">×</text>
+              <!-- Reaction chain label -->
+              <rect x="115" y="545" width="175" height="60" rx="8" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+              <text x="125" y="560" fill="#ff3366" font-size="7" font-weight="700" font-family="sans-serif">⛓ Reaction Chain</text>
+              <circle cx="130" cy="578" r="7" fill="#333"/>
+              <text x="142" y="580" fill="rgba(255,255,255,0.6)" font-size="6" font-family="sans-serif">@user1 replied → 5s</text>
+              <circle cx="130" cy="594" r="7" fill="#333"/>
+              <text x="142" y="596" fill="rgba(255,255,255,0.6)" font-size="6" font-family="sans-serif">@user2 replied → 5s</text>
+              <!-- "Users stay in video mode" badge -->
+              <rect x="75" y="300" width="150" height="30" rx="15" fill="rgba(0,200,83,0.15)" stroke="#00c853" stroke-width="1"/>
+              <text x="150" y="319" text-anchor="middle" fill="#00c853" font-size="8" font-weight="700" font-family="sans-serif">🎥 Always in video mode</text>
+            </svg>
+          </div>
+          <span class="mockup-caption">Reply Preview + Chain</span>
+        </div>
+      </div>
+      <div class="narration">
+        🎙 <em>Script:</em> "The impact is clear: retention goes up because users never leave video mode.
+        Communities form around reaction chains and micro-vlogs. And because everything is optimized for tiny payloads,
+        performance stays buttery smooth even on slower networks."
+      </div>
+      <div class="slide-progress"></div>
+    </section>
+
+    <!-- SLIDE 5 — The Result (1:36–2:00) -->
+    <section class="slide" data-index="4">
+      <h2><span class="dot"></span>The Result</h2>
+      <div style="display:flex; gap:3rem; flex-wrap:wrap; align-items:flex-start;">
+        <div style="flex:1; min-width:18rem;">
+          <div class="takeaway">
+            <strong>A more social, interactive, and immersive Shorts experience.</strong><br /><br />
+            By replacing text comments with 5-second video replies, we keep users engaged in the medium they came for — video.
+            Every interaction becomes content. Every viewer becomes a creator.
+          </div>
+        </div>
+        <!-- Before / After comparison -->
+        <div class="mockup-row" style="margin-top:0; gap:1.5rem;">
+          <div class="mockup-group">
+            <div class="mockup-frame" style="width:130px;">
+              <svg viewBox="0 0 300 640" xmlns="http://www.w3.org/2000/svg">
+                <rect width="300" height="640" fill="#111"/>
+                <!-- "Before" old-style comment section -->
+                <text x="150" y="40" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="9" font-weight="700" font-family="sans-serif">BEFORE</text>
+                <rect x="15" y="60" width="270" height="520" rx="12" fill="#1a1a1a"/>
+                <text x="30" y="90" fill="#fff" font-size="11" font-weight="700" font-family="sans-serif">Comments</text>
+                <text x="180" y="90" fill="rgba(255,255,255,0.3)" font-size="9" font-family="sans-serif">1,234</text>
+                <!-- Text comments -->
+                <circle cx="40" cy="120" r="10" fill="#333"/><rect x="58" y="110" width="140" height="8" rx="4" fill="rgba(255,255,255,0.08)"/><rect x="58" y="124" width="100" height="6" rx="3" fill="rgba(255,255,255,0.05)"/>
+                <circle cx="40" cy="160" r="10" fill="#333"/><rect x="58" y="150" width="160" height="8" rx="4" fill="rgba(255,255,255,0.08)"/><rect x="58" y="164" width="120" height="6" rx="3" fill="rgba(255,255,255,0.05)"/>
+                <circle cx="40" cy="200" r="10" fill="#333"/><rect x="58" y="190" width="130" height="8" rx="4" fill="rgba(255,255,255,0.08)"/><rect x="58" y="204" width="90" height="6" rx="3" fill="rgba(255,255,255,0.05)"/>
+                <circle cx="40" cy="240" r="10" fill="#333"/><rect x="58" y="230" width="150" height="8" rx="4" fill="rgba(255,255,255,0.08)"/><rect x="58" y="244" width="110" height="6" rx="3" fill="rgba(255,255,255,0.05)"/>
+                <circle cx="40" cy="280" r="10" fill="#333"/><rect x="58" y="270" width="140" height="8" rx="4" fill="rgba(255,255,255,0.08)"/><rect x="58" y="284" width="80" height="6" rx="3" fill="rgba(255,255,255,0.05)"/>
+                <circle cx="40" cy="320" r="10" fill="#333"/><rect x="58" y="310" width="120" height="8" rx="4" fill="rgba(255,255,255,0.08)"/><rect x="58" y="324" width="100" height="6" rx="3" fill="rgba(255,255,255,0.05)"/>
+                <!-- Boring label -->
+                <text x="150" y="420" text-anchor="middle" fill="rgba(255,255,255,0.15)" font-size="30" font-weight="900" font-family="sans-serif">💤</text>
+                <text x="150" y="460" text-anchor="middle" fill="rgba(255,255,255,0.25)" font-size="9" font-family="sans-serif">Text-only · Breaks immersion</text>
+                <!-- Keyboard icon -->
+                <rect x="60" y="530" width="180" height="35" rx="6" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                <text x="150" y="553" text-anchor="middle" fill="rgba(255,255,255,0.2)" font-size="8" font-family="sans-serif">⌨️ Type a comment…</text>
+              </svg>
+            </div>
+            <span class="mockup-caption" style="color:var(--muted);">❌ Before: Text Only</span>
+          </div>
+          <div class="mockup-group">
+            <div class="mockup-frame" style="width:130px;">
+              <svg viewBox="0 0 300 640" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="afterGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1a1040"/><stop offset="100%" stop-color="#0a2030"/></linearGradient>
+                </defs>
+                <rect width="300" height="640" fill="url(#afterGrad)"/>
+                <text x="150" y="40" text-anchor="middle" fill="#00c853" font-size="9" font-weight="700" font-family="sans-serif">AFTER</text>
+                <!-- Tier bar -->
+                <rect y="50" width="300" height="28" fill="#1a1a2e" opacity="0.9"/>
+                <text x="12" y="68" fill="#ff3366" font-size="8" font-weight="700" font-family="sans-serif">Creator Tier</text>
+                <text x="170" y="68" fill="#888" font-size="7" font-family="sans-serif">Unlimited replies</text>
+                <!-- Video playing -->
+                <rect x="40" y="100" width="220" height="150" rx="8" fill="rgba(255,255,255,0.04)"/>
+                <polygon points="130,160 130,195 165,177" fill="rgba(255,255,255,0.15)"/>
+                <!-- Reply button highlighted -->
+                <circle cx="270" cy="330" r="15" fill="rgba(255,51,102,0.2)" stroke="#ff3366" stroke-width="1.5"/>
+                <text x="270" y="334" text-anchor="middle" fill="#fff" font-size="12">🎬</text>
+                <text x="270" y="350" text-anchor="middle" fill="#ff3366" font-size="6" font-weight="700" font-family="sans-serif">Reply</text>
+                <!-- Video replies section -->
+                <rect x="10" y="380" width="280" height="220" rx="12" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+                <text x="25" y="405" fill="#ff3366" font-size="8" font-weight="700" font-family="sans-serif">🎬 Video Replies (5s each)</text>
+                <!-- Video reply thumbnails -->
+                <rect x="25" y="420" width="55" height="40" rx="6" fill="#222"/><circle cx="52" cy="435" r="8" fill="rgba(255,255,255,0.06)"/><text x="52" y="455" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="5" font-family="sans-serif">@user1</text>
+                <rect x="90" y="420" width="55" height="40" rx="6" fill="#222"/><circle cx="117" cy="435" r="8" fill="rgba(255,255,255,0.06)"/><text x="117" y="455" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="5" font-family="sans-serif">@user2</text>
+                <rect x="155" y="420" width="55" height="40" rx="6" fill="#222"/><circle cx="182" cy="435" r="8" fill="rgba(255,255,255,0.06)"/><text x="182" y="455" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="5" font-family="sans-serif">@user3</text>
+                <rect x="220" y="420" width="55" height="40" rx="6" fill="#222"/><circle cx="247" cy="435" r="8" fill="rgba(255,255,255,0.06)"/><text x="247" y="455" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="5" font-family="sans-serif">@you</text>
+                <!-- Engagement stats -->
+                <rect x="25" y="480" width="245" height="36" rx="8" fill="rgba(0,200,83,0.08)" stroke="#00c853" stroke-width="1"/>
+                <text x="147" y="495" text-anchor="middle" fill="#00c853" font-size="7" font-weight="700" font-family="sans-serif">📈 +340% engagement</text>
+                <text x="147" y="508" text-anchor="middle" fill="rgba(0,200,83,0.6)" font-size="6" font-family="sans-serif">Viewers → Creators · Video conversations</text>
+                <!-- Mini reply playing -->
+                <rect x="25" y="530" width="60" height="45" rx="8" fill="#111" stroke="#ff3366" stroke-width="1.5"/>
+                <text x="55" y="548" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="6" font-family="sans-serif">▶ Playing</text>
+                <text x="55" y="565" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="5" font-family="sans-serif">Your 5s reply</text>
+                <!-- Sparkle -->
+                <text x="150" y="570" fill="#fff" font-size="14" opacity="0.6">✨</text>
+              </svg>
+            </div>
+            <span class="mockup-caption" style="color:#00c853;">✓ After: Video Replies</span>
+          </div>
+        </div>
+      </div>
+      <div class="narration">
+        🎙 <em>Script:</em> "The result? A Shorts experience that's more social, more interactive, and fully immersive.
+        Text comments become video conversations. Every reply is content. Every viewer is a potential creator. Thanks for watching!"
+      </div>
+      <div class="slide-progress"></div>
+    </section>
+
+  </div>
+
+  <script>
+    (function () {
+      const TOTAL_TIME = 120; // 2 minutes in seconds
+      const slides = document.querySelectorAll('.slide');
+      const totalSlides = slides.length; // 5 slides
+      const SLIDE_DURATION = TOTAL_TIME / totalSlides; // 24s each
+      const dots = document.querySelectorAll('.indicators .dot');
+      const globalBar = document.getElementById('global-bar');
+      const timerEl = document.getElementById('timer');
+      const btnPlay = document.getElementById('btn-play');
+      const btnRestart = document.getElementById('btn-restart');
+
+      let current = 0;
+      let elapsed = 0;
+      let playing = true;
+      let interval = null;
+
+      function pad(n) { return n < 10 ? '0' + n : n; }
+
+      function formatTime(secs) {
+        const remaining = Math.max(0, TOTAL_TIME - secs);
+        const m = Math.floor(remaining / 60);
+        const s = remaining % 60;
+        return m + ':' + pad(s);
+      }
+
+      function goTo(index) {
+        if (index < 0 || index >= totalSlides) return;
+        slides[current].classList.remove('active');
+        dots[current].classList.remove('active');
+        current = index;
+        slides[current].classList.add('active');
+        dots[current].classList.add('active');
+
+        // Reset the CSS animation on the slide-progress bar
+        slides[current].querySelector('.slide-progress').style.animation = 'none';
+        void slides[current].querySelector('.slide-progress').offsetHeight;
+        slides[current].querySelector('.slide-progress').style.animation = '';
+      }
+
+      function tick() {
+        elapsed++;
+        const slideIndex = Math.min(Math.floor(elapsed / SLIDE_DURATION), totalSlides - 1);
+        if (slideIndex !== current) goTo(slideIndex);
+
+        // Update global bar
+        globalBar.style.width = ((elapsed / TOTAL_TIME) * 100) + '%';
+        timerEl.textContent = formatTime(elapsed);
+
+        // Update per-slide CSS var for progress
+        const slideElapsed = elapsed - (current * SLIDE_DURATION);
+        const pct = Math.min((slideElapsed / SLIDE_DURATION) * 100, 100);
+        slides[current].style.setProperty('--slide-duration', (SLIDE_DURATION - slideElapsed) + 's');
+
+        if (elapsed >= TOTAL_TIME) {
+          clearInterval(interval);
+          playing = false;
+          btnPlay.textContent = '▶ Play';
+        }
+      }
+
+      function start() {
+        if (interval) clearInterval(interval);
+        interval = setInterval(tick, 1000);
+      }
+
+      // Play / Pause
+      btnPlay.addEventListener('click', function () {
+        if (playing) {
+          clearInterval(interval);
+          playing = false;
+          btnPlay.textContent = '▶ Play';
+          // Pause CSS animation
+          slides[current].querySelector('.slide-progress').style.animationPlayState = 'paused';
+        } else {
+          if (elapsed >= TOTAL_TIME) return;
+          playing = true;
+          btnPlay.textContent = '⏸ Pause';
+          start();
+          slides[current].querySelector('.slide-progress').style.animationPlayState = 'running';
+        }
+      });
+
+      // Restart
+      btnRestart.addEventListener('click', function () {
+        clearInterval(interval);
+        elapsed = 0;
+        playing = true;
+        btnPlay.textContent = '⏸ Pause';
+        globalBar.style.width = '0%';
+        timerEl.textContent = formatTime(0);
+        goTo(0);
+        start();
+      });
+
+      // Click dots to jump
+      dots.forEach(function (dot) {
+        dot.addEventListener('click', function () {
+          const idx = parseInt(this.dataset.slide, 10);
+          elapsed = idx * SLIDE_DURATION;
+          goTo(idx);
+          globalBar.style.width = ((elapsed / TOTAL_TIME) * 100) + '%';
+          timerEl.textContent = formatTime(elapsed);
+        });
+      });
+
+      // Keyboard: left / right arrows
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowRight') {
+          const next = Math.min(current + 1, totalSlides - 1);
+          elapsed = next * SLIDE_DURATION;
+          goTo(next);
+          globalBar.style.width = ((elapsed / TOTAL_TIME) * 100) + '%';
+          timerEl.textContent = formatTime(elapsed);
+        } else if (e.key === 'ArrowLeft') {
+          const prev = Math.max(current - 1, 0);
+          elapsed = prev * SLIDE_DURATION;
+          goTo(prev);
+          globalBar.style.width = ((elapsed / TOTAL_TIME) * 100) + '%';
+          timerEl.textContent = formatTime(elapsed);
+        } else if (e.key === ' ') {
+          e.preventDefault();
+          btnPlay.click();
+        }
+      });
+
+      // Auto-start
+      start();
+    })();
+  </script>
+</body>
+</html>
